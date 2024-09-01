@@ -1,31 +1,51 @@
+
 import requests
+import bz2
 from astropy.io import fits
 import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter
+
+path_git = "/mnt/c/Users/Chemito/Documents/GitHub/astroinfo-tools"
+path_astro = "/mnt/c/Users/Chemito/Desktop/astrostuff"
 
 # Define URLs for FITS files
 fits_urls = [
-    "https://data.sdss.org/sas/dr16/eboss/photoObj/frames/301/0000/6/frame-r-000006-1-0123.fits.bz2",
-    "https://data.sdss.org/sas/dr16/eboss/photoObj/frames/301/0000/6/frame-g-000006-1-0123.fits.bz2"
+    f"https://data.sdss.org/sas/dr16/eboss/photoObj/frames/301/1000/6/frame-r-001000-6-00{28 + i}.fits.bz2" for i in range(50)
 ]
 
-# Function to download FITS files
+# Function to download and decompress FITS files
 def download_fits(url, filename):
     response = requests.get(url)
-    with open(filename, 'wb') as file:
+    compressed_filename = filename + '.bz2'
+    with open(compressed_filename, 'wb') as file:
         file.write(response.content)
-    print(f"Downloaded {filename}")
+    print(f"Downloaded {compressed_filename}")
+    
+    # Decompress the file
+    with bz2.BZ2File(compressed_filename, 'rb') as compressed_file:
+        with open(filename, 'wb') as decompressed_file:
+            decompressed_file.write(compressed_file.read())
+    print(f"Decompressed {filename}")
 
-# Download the FITS files
+# Download and decompress the FITS files
 for i, url in enumerate(fits_urls):
-    download_fits(url, f"image_{i+1}.fits.bz2")
+    download_fits(url, f"image_{i+1}.fits")
 
-# Open and display FITS files
+# Open, apply Gaussian filter, and save FITS files
 for i in range(len(fits_urls)):
-    with fits.open(f"image_{i+1}.fits.bz2") as hdul:
-        hdul.info()
-        image_data = hdul[0].data
-        plt.figure()
-        plt.imshow(image_data, cmap='gray')
-        plt.colorbar()
-        plt.title(f"Image {i+1}")
-        plt.show()
+    try:
+        with fits.open(f"image_{i+1}.fits") as hdul:
+            hdul.info()
+            image_data = hdul[0].data
+            
+            # Apply Gaussian filter
+            filtered_image_data = gaussian_filter(image_data, sigma=2)
+            
+            # Save the filtered image
+            plt.figure()
+            plt.imshow(filtered_image_data, cmap='gray')
+            plt.savefig(f"filtered_image_{i+1}.png")  # Save the plot as a PNG file
+            plt.close()  # Close the plot to free memory
+            print(f"Saved filtered_image_{i+1}.png")
+    except OSError as e:
+        print(f"Error opening image_{i+1}.fits: {e}")

@@ -13,4 +13,5 @@ git add (archivo) -> agrega un archivo al stage
 git commit -m "mensaje" -> guarda los cambios en el repositorio
 git push origin master -> sube los cambios al repositorio
 git pull origin master -> baja los cambios del repositorio
+git status -> muestra el estado de los archivos
 """
